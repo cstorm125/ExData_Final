@@ -14,7 +14,7 @@ balem<-balem[balem$Bal==TRUE,]
 
 #Plot
 plot(balem$year,balem$Emissions,type='l', xlab='year',
-     ylab='', main='Emissions from All Sources 1999-2008 in Baltimore City', 
+     ylab='', main='Emissions (tons) from All Sources 1999-2008 in Baltimore City', 
      lwd=3, col='lightblue', axes=FALSE,cex.lab=0.7, cex.main=0.8)
 
 #Annotate

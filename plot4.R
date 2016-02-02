@@ -18,8 +18,8 @@ coalem<-coalem[coalem$Coal==TRUE,]
 
 #Plot
 library(ggplot2)
-qplot(year,Emissions,data=coalem, geom=c('line'), 
-      main='Emission from Coal Combustion-related Sources 1999-2008')
+qplot(year,Emissions,data=coalem, geom=c('line','point'), 
+      main='Emission from Coal Combustion-related Sources 1999-2008', ylab='Emissions (tons)')
 
 #Save
 ggsave(file="plot4.png", dpi=72)

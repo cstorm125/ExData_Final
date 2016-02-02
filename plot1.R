@@ -9,11 +9,12 @@ NEI <- readRDS("summarySCC_PM25.rds")
 #merged<-merge(NEI,SCC,by.x='SCC',by.y='SCC',all=FALSE)
 
 #Aggregate and name columns
-yearem <-aggregate(NEI,by=list(year=NEI$year,Emissions=NEI$Emissions),sum)
+yearem <-aggregate(NEI$Emissions,by=list(NEI$year),sum)
+names(yearem)<-c('year','Emissions')
 
 #Plot
 plot(yearem$year,yearem$Emissions,type='l', xlab='year',
-     ylab='', main='Emissions from All Sources 1999-2008', 
+     ylab='', main='Emissions (tons) from All Sources 1999-2008', 
      lwd=3, col='lightblue', axes=FALSE,cex.lab=0.7, cex.main=0.8)
 
 #Annotate

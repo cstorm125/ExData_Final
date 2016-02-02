@@ -14,8 +14,8 @@ balem<-balem[balem$Bal==TRUE,]
 
 #Plot
 library(ggplot2)
-qplot(year,Emissions,data=balem, geom=c('line'), color=type, 
-      main='Emissions from 1999–2008 for Baltimore City, by Type')
+qplot(year,Emissions,data=balem, geom=c('line','point'), color=type, 
+      main='Emissions from 1999–2008 for Baltimore City by Type', ylab='Emissions (tons)')
 
 #Save
 ggsave(file="plot3.png", dpi=72)

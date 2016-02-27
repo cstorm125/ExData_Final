@@ -1,0 +1,138 @@
+---
+title: "Fine particulate matter (PM2.5) Visualization"
+author: "Charin Polpanumas"
+date: "February 3, 2559 BE"
+output:
+  html_document:
+    toc: true
+    theme: readable
+---
+
+# Executive Summary
+
+This report visualizes fine particulate matter (PM2.5) emission in the United States over the 10-year period 1999 to 2008, based on the [National Emissions Inventory (NEI) dataset](http://www.epa.gov/air-emissions-inventories/national-emissions-inventory) by the [Environmental Protection Agency (EPA)](http://www3.epa.gov). For each year and for each type of PM source, the NEI records how many tons of PM2.5 were emitted from that source over the course of the entire year. The time periods are 1999, 2002, 2005, and 2008.
+
+#Data Processing
+We download, unzip and read the files to ```NEI``` (summary) and ```SCC``` (source classification) data frames.
+```{r, cache=TRUE}
+#Download then unzip
+if(!file.exists('fnei.zip')){
+    download.file(url='https://d396qusza40orc.cloudfront.net/exdata%2Fdata%2FNEI_data.zip',destfile='fnei.zip')
+    unzip('fnei.zip')
+}
+
+#Read
+NEI <- readRDS("summarySCC_PM25.rds")
+SCC <- readRDS("Source_Classification_Code.rds")
+```
+#Exploratory Data Analysis
+The first two plots use the base plot package while the rest use ```ggplot2```.
+## Total emission in US
+We aggregate the emission amount by year then plot the total emission from all sources in the United States from 1999-2008.
+```{r, cache=TRUE}
+#Aggregate and name columns
+yearem <-aggregate(NEI$Emissions,by=list(NEI$year),sum)
+names(yearem)<-c('year','Emissions')
+
+#Plot
+plot(yearem$year,yearem$Emissions,type='l', xlab='year',
+     ylab='', main=~ PM[2.5] ~'Emissions (tons) from All Sources 1999-2008', 
+     lwd=3, col='lightblue', axes=FALSE,cex.lab=0.7, cex.main=0.8)
+
+#Annotate
+text(yearem$year,yearem$Emissions,yearem$year,cex=0.5)
+
+#Axis
+axis(1, at = seq(1999, 2008, by = 1), las=1, cex.axis=0.5, col='grey')
+axis(2, at = seq(3000000,7500000,by=500000), las=1, cex.axis=0.5, col='grey')
+```
+## Total emission in Baltimore City
+We aggregate the emission amount by year and the condition that the city is Baltimore City ```fips=='24510'``` then plot the emissions for the city from 1999-2008.
+```{r, cache=TRUE}
+#Aggregate and name columns
+balem <-aggregate(NEI$Emissions,by=list(NEI$year, NEI$fips=='24510'),sum)
+names(balem) <-c('year','Bal','Emissions')
+balem<-balem[balem$Bal==TRUE,]
+
+#Plot
+plot(balem$year,balem$Emissions,type='l', xlab='year',
+     ylab='', main=~ PM[2.5] ~'Emissions (tons) from All Sources 1999-2008 in Baltimore City', 
+     lwd=3, col='lightblue', axes=FALSE,cex.lab=0.7, cex.main=0.8)
+
+#Annotate
+text(balem$year,balem$Emissions,balem$year,cex=0.5)
+
+#Axis
+axis(1, at = seq(1999, 2008, by = 1), las=1, cex.axis=0.5, col='grey')
+axis(2, at = seq(1500,3500,by=100), las=1, cex.axis=0.5, col='grey')
+```
+## Emission by sources in Baltimore City
+We aggregate the emission amount by year, source of emission and the condition that the city is Baltimore City ```fips=='24510'``` then plot the emissions for the city from 1999-2008.
+```{r, cache=TRUE}
+#Aggregate and name columns
+balem <-aggregate(NEI$Emissions,by=list(NEI$year, NEI$fips=='24510',NEI$type),sum)
+names(balem) <-c('year','Bal','type','Emissions')
+balem<-balem[balem$Bal==TRUE,]
+
+#Plot
+library(ggplot2)
+qplot(year,Emissions,data=balem, geom=c('line','point'), color=type, 
+      main=~ PM[2.5] ~'Emissions from 1999–2008 for Baltimore City by Type', ylab='Emissions (tons)')
+```
+## Emission by coal-combusted sources 
+We filter for ```Coal``` in the ```SCC``` dataset to get coal-related combustions. With this ```index```, we aggregate the emission by year for the coal-combusted sources then plot the emissions from 1999-2008.
+```{r, cache=TRUE}
+#Get SCC for coal-related combustions
+i<-grep('Coal',SCC$EI.Sector,ignore.case = TRUE)
+index <-SCC[i,]$SCC
+
+#Aggregate and name columns
+coalem <-aggregate(NEI$Emissions,by=list(NEI$year, NEI$SCC %in% index),sum)
+names(coalem) <-c('year','Coal','Emissions')
+coalem<-coalem[coalem$Coal==TRUE,]
+
+#Plot
+library(ggplot2)
+qplot(year,Emissions,data=coalem, geom=c('line','point'), 
+      main=~ PM[2.5] ~'Emission from Coal Combustion-related Sources 1999-2008', ylab='Emissions (tons)')
+```
+## Emission from motor sources in Baltimore City
+We aggregate the emission amount by year, the condition that the city is Baltimore City ```fips=='24510'```, and that the emission comes from a motor souce ```NEI$type=='ON-ROAD'``` then plot the emissions for the city from 1999-2008.
+```{r, cache=TRUE}
+motorem <-aggregate(NEI$Emissions,
+                    by=list(NEI$year, NEI$fips=='24510', NEI$type=='ON-ROAD'),sum)
+names(motorem) <-c('year','type','Bal','Emissions')
+motorem<-motorem[motorem$type==TRUE & motorem$Bal==TRUE,]
+
+#Plot
+library(ggplot2)
+qplot(year,Emissions,data=motorem, geom=c('line','point'), 
+      main=~ PM[2.5] ~'Emission from Motor-related Sources 1999-2008 in Baltimore City',
+      ylab='Emissions (tons)')
+```
+## Comparison of changes in emission between Baltimore City and LA County
+We aggregate the emission amount by year, city, and the condition that the emission comes from a motor souce ```NEI$type=='ON-ROAD'```. We filter the dataset so that the data comes from Baltimore City (```fips=='24510'```) and LA County (```fips=='06037'```) then plot the emissions for the city from 1999-2008.
+```{r, cache=TRUE}
+motorem <-aggregate(NEI$Emissions,
+                    by=list(NEI$year, NEI$type=='ON-ROAD',NEI$fips),sum)
+names(motorem) <-c('year','type','fips','Emissions')
+motorem<-motorem[motorem$type==TRUE & 
+                       (motorem$fips=='24510'|motorem$fips=='06037'),]
+motorem$city <-ifelse(motorem$fips=='24510','Baltimore City','LA County')
+
+```
+Since we are interested in how emission changes in both cities, we choose emission level in 1999 as the base line for both cities and set the emission equal to 1. Then we plot the changes from 1999 to 2008.
+```{r, cache=TRUE}
+#Create changes variable with the baseline being Emissions in 1999 for both cities
+baseline<-motorem[motorem$year==1999,]
+motorem$baseline<-ifelse(motorem$fips=='24510',baseline[baseline$fips=='24510',4],
+                         baseline[baseline$fips=='06037',4])
+motorem$changes<-motorem$Emissions/motorem$baseline
+
+#Plot
+library(ggplot2)
+qplot(year,changes,data=motorem, geom=c('line','point'), 
+      main='Changes in Emission from Motor-related Sources 1999-2008 
+      Baltimore City vs LA County',
+      color=city, ylab='Changes in Emissions (Emissions in 1999 =1)')
+```
